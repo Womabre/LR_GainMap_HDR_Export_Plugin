@@ -26,7 +26,7 @@ exportServiceProvider.exportPresetFields = {
   { key = 'fileSuffix',     default = '' },          -- -t
 
   -- New, user-facing size control (maps to wrapper ratio via ratio = 1/size)
-  { key = 'uiGainMapSize',  default = 1.00 },        -- 1.00×..0.50×
+  { key = 'uiGainMapSize',  default = 1.00 },        -- 1.00x..0.50x
 
   -- Legacy ratio (wrapper expects -H 1.00..2.00). Kept for back-compat only.
   { key = 'gainMapScale',   default = 1.50 },
@@ -68,13 +68,10 @@ local function decimalBinding(key, decimals, min, max)
   }
 end
 
--- Prefer lrgainmap, then ghdr
+-- Resolve wrapper: use "ghdr" in the plugin root
 local function resolveWrapper()
-  local binDir = LrPathUtils.child(_PLUGIN.path, "bin")
-  local w1 = LrPathUtils.child(binDir, "lrgainmap")
-  local w2 = LrPathUtils.child(binDir, "ghdr")
-  if LrFileUtils.exists(w1) == 'file' then return w1 end
-  if LrFileUtils.exists(w2) == 'file' then return w2 end
+  local w = LrPathUtils.child(_PLUGIN.path, "ghdr")
+  if LrFileUtils.exists(w) == 'file' then return w end
   return nil
 end
 
@@ -94,7 +91,7 @@ exportServiceProvider.sectionsForTopOfDialog = function(viewFactory, propertyTab
   propertyTable.fileSuffix     = propertyTable.fileSuffix     or ''
 
   -- Back-compat: if uiGainMapSize not set yet, derive from legacy gainMapScale
-  -- wrapper ratio (-H) = 1.00..2.00  <=>  UI size (×) = 1/ratio = 1.00..0.50
+  -- wrapper ratio (-H) = 1.00..2.00  <=>  UI size (x) = 1/ratio = 1.00..0.50
   do
     local ui = tonumber(propertyTable.uiGainMapSize)
     if not ui then
@@ -161,9 +158,9 @@ exportServiceProvider.sectionsForTopOfDialog = function(viewFactory, propertyTab
         f:slider {
           value = bind 'imageQuality',
           min = 20, max = 100, fill_horizontal = 1,
-          tooltip = "JPEG/HEIC base quality (20–100)",
+          tooltip = "JPEG/HEIC base quality (20-100)",
         },
-        f:edit_field { value = bind 'imageQuality', width_in_chars = 3, tooltip = "Enter image quality (20–100)" },
+        f:edit_field { value = bind 'imageQuality', width_in_chars = 3, tooltip = "Enter image quality (20-100)" },
       },
 
       f:row {
@@ -179,14 +176,14 @@ exportServiceProvider.sectionsForTopOfDialog = function(viewFactory, propertyTab
         },
       },
 
-      -- New: Gain-map size (×) instead of ratio
+      -- New: Gain-map size (x) instead of ratio
       f:row {
-        f:static_text { title = "Gain-map size (×):", alignment = 'right' },
+        f:static_text { title = "Gain-map size (x):", alignment = 'right' },
         f:slider {
           value = bind 'uiGainMapSize',
           min = 0.50, max = 1.00, precision = 2, fill_horizontal = 1,
           enabled = appleModeEnabledBinding(),
-          tooltip = "1.00× = full size gain-map, 0.50× = half width/height",
+          tooltip = "1.00x = full size gain-map, 0.50x = half width/height",
         },
         f:edit_field {
           value = decimalBinding('uiGainMapSize', 2, 0.50, 1.00),
@@ -258,7 +255,7 @@ exportServiceProvider.processRenderedPhotos = function(functionContext, exportCo
     bitDepth = 8
   end
 
-  -- Convert UI size (×) to wrapper ratio (-H): ratio = 1 / size
+  -- Convert UI size (x) to wrapper ratio (-H): ratio = 1 / size
   local uiSize = tonumber(props.uiGainMapSize)
   if not uiSize then
     -- derive from legacy gainMapScale if needed
@@ -272,7 +269,7 @@ exportServiceProvider.processRenderedPhotos = function(functionContext, exportCo
 
   local wrapper = resolveWrapper()
   if not wrapper then
-    LrDialogs.showError("Could not find wrapper in plugin/bin. Expected 'lrgainmap' or 'ghdr'.")
+    LrDialogs.showError("Could not find 'ghdr' in the plugin root. Place the executable next to Info.lua.")
     return
   end
 
